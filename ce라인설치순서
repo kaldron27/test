@@ -40,6 +40,19 @@ chown wdfs:wdfs /data/tracking
 #바탕화면에 링크만들기 바탕화면에서 실행
 ln -s /data/tracking/ tracking
 
+chown -R root:docker /data
+
+이하 wdfs 계정에서 작업
+mkdir /data/tracking
+mkdir /data/tracking/docker-compose
+mkdir /data/tracking/log
+mkdir /data/image
+mkdir /data/image_backup
+
+chown -R root:docker /data/tracking/log
+chown -R root:docker /data/image_backup
+
+
 - wdfs에 sudo 패스워드 없이 세팅
 chmod +w /etc/sudoers
 vi /etc/sudoers
