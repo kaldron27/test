@@ -1,0 +1,306 @@
+CE라인 설치
+
+LX2 설치
+
+- rocky linux gui버전으로 설치
+
+파티션 수동 설정
+- 기존 파티션들 모두 제거
+- 이후 자동 설정버튼 한번 누른 후 시작
+ /home 용량 20GiB으로 수정
+/data 용량 377.55 GiB(남은 전체 용량) 추가
+
+장치유형: 표준파티션 
+파일시스템: xfs
+
+root: Wdf$pa55
+사용자생성
+wdfs/Wdfs$pa55 관리자권한
+
+자동 로그인 설정
+http://blog.engintruder.com/155
+vi /etc/gdm/custom.conf
+￼
+AutomaticLoginEnable=true
+AutomaticLogin=wdfsㅈ
+
+- 한글 키보드 설정
+https://hummingbird.tistory.com/6742
+>> 이후 F9로 한/영전환되도록 추가, 한/영키 추가, 쉬프트+스페이스바 추가
+
+이하 루트에서 작업
+
+- 추가 볼륨 마운트
+https://goldsony.tistory.com/27
+>> 또는 설치시 선택 가능
+>> 추가 볼륨은 /data로 설정할 것
+chmod 777 /data
+mkdir /data/tracking
+chown wdfs:wdfs /data/tracking
+#바탕화면에 링크만들기 바탕화면에서 실행
+ln -s /data/tracking/ tracking
+
+- wdfs에 sudo 패스워드 없이 세팅
+chmod +w /etc/sudoers
+vi /etc/sudoers
+- wdfs ALL=(ALL) NOPASSWD: ALL
+chmod -w /etc/sudoers
+
+
+- 도커설치
+dnf -y install epel-release
+dnf -y update
+dnf install -y dnf-utils
+
+dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+dnf -y install docker-ce --allowerassing -y
+
+dnf -y install docker-ce docker-ce-cli containerd.io
+systemctl start docker
+systemctl enable docker
+
+
+- docker-compose 설치
+ sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+
+
+- 도커 ip 대역 설정
+- 도커의 기본 ip 대역이 172.17.0.1/16 이어서 라우팅 시 문제 발생 가능성이 있음
+- 윈도우에서 도커가 자주 안뜨는 이유일 수도(??)
+- 윈도우에서는 도커 대시보드를 켜고, 설정창에서 Docker Engine의 json에 추가
+- default-address-pools를 세팅하면 docker-compose 등에서 컨테이너 ip 사용시 확인함
+vi /etc/docker/daemon.json
+
+혹시 모르니 트래킹, 이미지 다르게 설정할것
+tracking:
+{
+        "bip": "192.200.0.1/16",
+        "default-address-pools":[
+                {"base":"192.201.0.1/16", "size":24},
+                {"base":"192.202.0.1/16", "size":24}
+        ]
+}
+
+image: 
+{
+        "bip": "192.210.0.1/16",
+        "default-address-pools":[
+                {"base":"192.211.0.1/16", "size":24},
+                {"base":"192.212.0.1/16", "size":24}
+        ]
+}
+설정후 docker network inspect bridge에서 설정사항 확인
+- 리눅스는 ifconfig docker로 네트워크 확인
+
+
+- 도커 wdfs에서 실행 가능하게 수정
+# docker 그룹 생성 
+groupadd docker 
+# 사용자 추가 
+usermod -aG docker wdfs
+usermod -aG docker root
+# docker.sock 그룹을 docker로 변경
+chown root:docker /var/run/docker.sock
+chown -R root:docker /var/lib/docker/
+chown -R root:docker /var/lib/containerd/
+
+시스템 재시작
+
+# 로그아웃 후 다시 로그인해서 그룹에 사용자로 추가 되었는지 확인. 
+# 가상환경에서 테스트를 수행할 경우 재 시작이 필요할 수 있다. 
+# X Windows와 같은 데스크탑 Linux 환경에서 세션을 완전히 로그아웃 한 후 로그인 해야 한다. 
+출처: https://bluebreeze.co.kr/1164 [Blue Breeze]
+
+
+- tracking docker파일들은 /data/tracking/docker-compose에 저장
+    - /data/tracking/docker-compose/infra.yml
+    - /data/tracking/docker-compose/tr-api.yml
+    - /data/tracking/docker-compose/tracking.yml
+    - /data/tracking/docker-compose/image.yml
+
+
+- rdp 서버 설치
+dnf install epel-release -y
+dnf -y install xrdp tigervnc-server
+systemctl enable xrdp.service
+# 방화벽 해제
+https://www.lesstif.com/system-admin/rhel-centos-firewall-22053128.html
+firewall-cmd --permanent --zone=public --add-port=3389/tcp
+# 삭제 참고
+firewall-cmd --permanent --zone=public --remove-port=8080/tcp
+# 재부팅
+reboot
+출처: https://blog.miyam.net/54 [낭만 프로그래머]
+
+- 포트 오픈
+firewall-cmd --permanent --zone=public --add-port=3389/tcp
+firewall-cmd --permanent --zone=public --add-port=21/tcp
+firewall-cmd --permanent --zone=public --add-port=22/tcp
+firewall-cmd --permanent --zone=public --add-port=123/udp
+firewall-cmd --permanent --zone=public --add-port=1883/tcp
+firewall-cmd --permanent --zone=public --add-port=13100/tcp
+firewall-cmd --permanent --zone=public --add-port=13110/tcp
+firewall-cmd --permanent --zone=public --add-port=13120/tcp
+firewall-cmd --permanent --zone=public --add-port=13125/tcp
+firewall-cmd --permanent --zone=public --add-port=13130/tcp
+firewall-cmd --permanent --zone=public --add-port=13140/tcp
+firewall-cmd --permanent --zone=public --add-port=13150/tcp
+firewall-cmd --permanent --zone=public --add-port=50000-51000/tcp
+reboot
+
+
+- ftp 서버 설치
+dnf -y install vsftpd
+#서버설정
+vi /etc/vsftpd/vsftpd.conf
+	chroot_local_user=YES
+	chroot_list_enable=YES
+	chroot_list_file=/etc/vsftpd/chroot_list
+	위 파일에 root, wdfs 추가(엔터로 구분)
+chroot_local_user: NO, chroot_list: 추가
+- chroot_list에 있는 사용자는 본인 홈 디렉토리 밖으로 못나감
+chroot_local_user:YES, chroot_list:추가
+- chroot_list에 있는 사용자만 홈디렉토리 밖으로 나감
+chroot_local_user:YES, chroot_list_enable=NO
+- 모든 사용자는 본인 홈만 접근 가능
+
+ftp 홈에서 벗어나지 못할 때 
+vi /etc/selinux/config
+파일에서 SELINUX=disabled 수정 뒤 재부팅
+
+
+
+- ntp 서버 연결
+# 라우터 연결 후 작업할 것
+https://bono915.tistory.com/entry/Linux-NTP-%EC%8B%9C%EA%B0%84-%EC%84%A4%EC%A0%95
+dnf -y install ntp
+vi /etc/ntp.conf
+위 파일에 추가 >> server 동기화할서버주소
+server 0.amazon.pool.ntp.org iburst minpoll 3 maxpoll 8
+server 1.amazon.pool.ntp.org iburst minpoll 3 maxpoll 8
+server 2.amazon.pool.ntp.org iburst minpoll 3 maxpoll 8
+server 3.amazon.pool.ntp.org iburst minpoll 3 maxpoll 8
+server ec2-3-35-252-67.ap-northeast-2.compute.amazonaws.com iburst minpoll 3 maxpoll 8
+- minpoll 3의 뜻은 서버와 시간차가 커지면 2의 3승 초 마다 동기화 (8초)
+- maxpoll 8의 뜻은 서버와의 시간차가 적어지면 2의 8승 초 마다 동기화 (256초)
+- aws 인스턴스 안될경우 아마존 ntp사용하도록 위처럼 모두 등록
+
+firewall-cmd --permanent --add-service=ntp
+firewall-cmd --reload
+systemctl start ntpd
+systemctl enable ntpd
+#시작프로그램 등록 확인
+systemctl list-dependencies | grep ntpd
+#ntp 작동여부
+ntpq -p
+
+방화벽확인
+nc -vu ec2-3-35-252-67.ap-northeast-2.compute.amazonaws.com 123
+
+ntpd 스탑 후 확인법
+ntpdate -s ec2-3-35-252-67.ap-northeast-2.compute.amazonaws.com
+ntpdate -d ec2-3-35-252-67.ap-northeast-2.compute.amazonaws.com
+
+ntpdate -d 0.amazon.pool.ntp.org
+
+rm -rf /etc/localtime
+ln -s /usr/share/zoneinfo/Asia/Seoul /etc/localtime
+
+
+
+
+
+- docker 실행
+# infra 관련 docker-compose 실행
+docker-compose docker-infra.yml up -d
+# tracking서버 관리용 api 서버 실행
+docker-compose -f docker-tr-api.yml up -d
+
+- infra.yml 실행 후 db create
+tracking 프로젝트의 create.sql 사용
+
+
+- 공유폴더? 확인
+https://jybaek.tistory.com/472
+
+카메라 컨트롤러의 비번이 없음 -> 비번 비운 상태로 처리
+wdfs에게 권한 부여
+1번 카메라 컨트롤러  
+mount -t cifs //172.16.2.21/users/administrator/desktop/skp_1 /data/image/camera1 -o uid=wdfs,gid=wdfs,password=
+
+2번 카메라 컨트롤러
+mount -t cifs //172.16.2.22/users/administrator/desktop/skp_2 /data/image/camera2 -o uid=wdfs,gid=wdfs,password=
+
+// 이 아래만 적용하고 재부팅해도 됨 위의 마운트 명령을 아래처럼 수정한 것
+vi /etc/fstab
+마지막에 추가
+//172.16.2.21/users/administrator/desktop/skp_1 /data/image/camera1 cifs uid=wdfs,gid=wdfs,password= 0 0
+//172.16.2.22/users/administrator/desktop/skp_2 /data/image/camera2 cifs uid=wdfs,gid=wdfs,password= 0 0
+
+
+CentOS에서 아래와 같이 마운트를 합니다.
+
+mount  -t  cifs  //윈도우IP/공유폴더 리눅스폴더 -o  username=ID,password=passwd
+mount -t cifs //192.168.0.10/mountMe /root/test/oops -o username=User,password=admin
+이때 username과 password는 윈도우의 설정을 따릅니다.
+
+끝으로 CentOS가 부팅될때 자동으로 마운트가 되도록 설정을 하려면 /etc/fstab을 아래와 같이 수정하도록 합니다.
+
+root@localhost:test# cat /etc/fstab 
+ 
+#
+# /etc/fstab
+# Created by anaconda on Tue Nov 10 10:07:24 2015
+#
+# Accessible filesystems, by reference, are maintained under '/dev/disk'
+# See man pages fstab(5), findfs(8), mount(8) and/or blkid(8) for more info
+#
+/dev/mapper/VolGroup-lv_root /                       ext4    defaults        1 1
+UUID=499b6754-50d5-4c4a-bde3-ace111d8bc11 /boot                   ext4    defaults        1 2
+/dev/mapper/VolGroup-lv_swap swap                    swap    defaults        0 0
+tmpfs                   /dev/shm                tmpfs   defaults        0 0
+devpts                  /dev/pts                devpts  gid=5,mode=620  0 0
+sysfs                   /sys                    sysfs   defaults        0 0
+proc                    /proc                   proc    defaults        0 0
+//192.168.0.10/mountME /root/test/oops cifs username=User,password=admin 0 0
+
+
+- 마운트 관련 크론탭 등록
+마운트용 쉘
+vi /root/camera_mount.sh
+
+#!/bin/bash
+
+camera1=`df -a | grep '172.16.2.21' | awk '{print length}'`
+camera2=`df -a | grep '172.16.2.22' | awk '{print length}'`
+
+if [ -z $camera1 ]
+then
+        echo 'camera1 gogogo'
+        mount -t cifs //172.16.2.21/users/administrator/desktop/skp_1 /data/image/camera1 -o uid=wdfs,gid=wdfs,password=
+fi
+
+if [ -z $camera2 ]
+then
+        echo 'camera2 gogogo'
+        mount -t cifs //172.16.2.22/users/administrator/desktop/skp_2 /data/image/camera2 -o uid=wdfs,gid=wdfs,password=
+fi
+
+crontab -e
+* * * * * /root/camera_mount.sh
+
+
+- ip 수동부여
+ip: 172.16.2.11
+netmask: 255.255.255.0
+게이트웨이: 172.16.2.3
+DNS: 172.17.2.1 (WAN포트 주소)
+
+
+
+
+
+
+
