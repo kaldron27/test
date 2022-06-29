@@ -249,7 +249,7 @@ mount -t cifs //192.168.0.10/mountMe /root/test/oops -o username=User,password=a
 끝으로 CentOS가 부팅될때 자동으로 마운트가 되도록 설정을 하려면 /etc/fstab을 아래와 같이 수정하도록 합니다.
 
 root@localhost:test# cat /etc/fstab 
- 
+
 #
 # /etc/fstab
 # Created by anaconda on Tue Nov 10 10:07:24 2015
