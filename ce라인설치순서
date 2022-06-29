@@ -174,27 +174,31 @@ vi /etc/selinux/config
 
 - ntp 서버 연결
 # 라우터 연결 후 작업할 것
-https://bono915.tistory.com/entry/Linux-NTP-%EC%8B%9C%EA%B0%84-%EC%84%A4%EC%A0%95
-dnf -y install ntp
-vi /etc/ntp.conf
+https://www.server-world.info/en/note?os=Rocky_Linux_8&p=ntp&f=1
+dnf -y install chrony
+vi /etc/chrony.conf
+
 위 파일에 추가 >> server 동기화할서버주소
-server 0.amazon.pool.ntp.org iburst minpoll 3 maxpoll 8
-server 1.amazon.pool.ntp.org iburst minpoll 3 maxpoll 8
-server 2.amazon.pool.ntp.org iburst minpoll 3 maxpoll 8
-server 3.amazon.pool.ntp.org iburst minpoll 3 maxpoll 8
-server ec2-3-35-252-67.ap-northeast-2.compute.amazonaws.com iburst minpoll 3 maxpoll 8
+pool 0.amazon.pool.ntp.org iburst minpoll 3 maxpoll 8
+pool 1.amazon.pool.ntp.org iburst minpoll 3 maxpoll 8
+pool 2.amazon.pool.ntp.org iburst minpoll 3 maxpoll 8
+pool 3.amazon.pool.ntp.org iburst minpoll 3 maxpoll 8
+pool ec2-3-35-252-67.ap-northeast-2.compute.amazonaws.com iburst minpoll 3 maxpoll 8
+
+allow 0.0.0.0/0
 - minpoll 3의 뜻은 서버와 시간차가 커지면 2의 3승 초 마다 동기화 (8초)
 - maxpoll 8의 뜻은 서버와의 시간차가 적어지면 2의 8승 초 마다 동기화 (256초)
 - aws 인스턴스 안될경우 아마존 ntp사용하도록 위처럼 모두 등록
 
 firewall-cmd --permanent --add-service=ntp
+firewall-cmd --runtime-to-permanent
 firewall-cmd --reload
 systemctl start ntpd
 systemctl enable ntpd
 #시작프로그램 등록 확인
 systemctl list-dependencies | grep ntpd
 #ntp 작동여부
-ntpq -p
+chronyc sources
 
 방화벽확인
 nc -vu ec2-3-35-252-67.ap-northeast-2.compute.amazonaws.com 123
