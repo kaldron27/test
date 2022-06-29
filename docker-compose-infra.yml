@@ -1,0 +1,55 @@
+version: "3.8"
+services:
+    mqtt:
+        image: ansi/mosquitto
+        container_name: mqtt-tracking
+        restart: always
+        ports:
+            - 13100:1883
+            - 1883:1883
+        environment:
+            TZ: "Asia/Seoul"
+    mysql:
+        image: mysql:8.0
+        container_name: mysql-tracking
+        volumes: 
+            - mysql-data:/var/lib/mysql
+            # - "./init/:/docker-entrypoint-initdb.d"
+        restart: always
+        ports:
+            - 13140:3306
+        command: --default-authentication-plugin=mysql_native_password
+        environment:
+            MYSQL_DATABASE: "tracking"
+            MYSQL_USER: "tracking"
+            MYSQL_PASSWORD: "tracking1!"
+            MYSQL_ROOT_PASSWORD: "root1!"
+            TZ: "Asia/Seoul"
+        cap_add: 
+            - SYS_NICE
+    redis:
+        image: redis:6.0
+        container_name: redis-tracking
+        restart: always
+        ports:
+            - 13150:6379
+        volumes: 
+            - redis-data:/data
+        environment:
+            TZ: "Asia/Seoul"
+    websocket-server:
+        image: iotsolution/tracking-websocket:release
+        container_name: websocket-server
+        restart: always
+        depends_on:
+            - mysql
+            - redis
+            - mqtt
+        ports:
+            - 13110:13110
+        environment:
+            TZ: "Asia/Seoul"
+        command: lx2
+volumes: 
+    redis-data:
+    mysql-data:

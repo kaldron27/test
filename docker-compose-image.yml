@@ -1,0 +1,17 @@
+version: "3.8"
+services:
+    image-gw:
+        image: iotsolution/image-gw:release
+        container_name: image-gw
+        privileged: true
+        volumes:
+            - /data/image:/image-gw/tracking/image
+            - /data/image_backup:/image-gw/tracking/image_backup
+            - /data/tracking/log:/image-gw/log
+        restart: always
+        ports:
+            - 13130:13130
+        entrypoint: ./start.sh
+        command: lx2
+        environment:
+            TZ: "Asia/Seoul"

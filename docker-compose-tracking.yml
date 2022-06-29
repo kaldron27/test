@@ -1,0 +1,22 @@
+version: "3.8"
+services:
+    tracking:
+        image: iotsolution/tracking:release
+        container_name: tracking-server
+        ports:
+            - 13125:13125
+        volumes:
+            - /data/tracking/log:/tracking/log
+        restart: always
+        environment:
+            TZ: "Asia/Seoul"
+        command: lx2
+    tracking-deploy:
+        image: iotsolution/tracking:release
+        container_name: tracking-server-deploy
+        volumes:
+            - /data/tracking/log:/tracking/log
+        restart: always
+        environment:
+            TZ: "Asia/Seoul"
+        command: lx2 deploy

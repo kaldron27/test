@@ -1,0 +1,13 @@
+version: "3.8"
+services:
+    tracking-api:
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
+        image: iotsolution/tracking-api:release
+        container_name: tracking-api
+        restart: always
+        ports:
+            - 13120:13120
+        environment:
+            TZ: "Asia/Seoul"
+        command: main.py LX2
