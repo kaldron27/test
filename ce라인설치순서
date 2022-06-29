@@ -22,7 +22,7 @@ http://blog.engintruder.com/155
 vi /etc/gdm/custom.conf
 ￼
 AutomaticLoginEnable=true
-AutomaticLogin=wdfsㅈ
+AutomaticLogin=wdfs
 
 - 한글 키보드 설정
 https://hummingbird.tistory.com/6742
